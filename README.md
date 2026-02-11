@@ -26,7 +26,7 @@ This Feather did not accept UF2 drag-and-drop reliably in our case.
 We flashed CircuitPython using **Microsoft Edge** and Adafruit’s web-based ESP tool.
 
 1. Put the Feather into bootloader mode
-2. Use Adafruit’s ESP Web Flasher in Edge to flash CircuitPython
+2. Use Adafruit’s ESP Web Flasher in Edge to flash CircuitPython [here](https://circuitpython.org/board/adafruit_feather_esp32s3_4mbflash_2mbpsram/)
 3. After flashing, the board should present a `CIRCUITPY` drive
 
 ## CircuitPython
