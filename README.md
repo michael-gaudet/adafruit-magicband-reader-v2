@@ -13,12 +13,11 @@ Wouldn't it be great to actually have your scan interaction actually... *do* som
 
 ## Hardware
 The hardware used here uses the same amp, speaker, etc. called for by the original project, with some changes/additions.
-- [Adafruit Feather ESP32-S3 (4MB Flash / 2MB PSRAM) (PID 5477)](https://learn.adafruit.com/adafruit-esp32-s3-feather/overview)
-- MAX98357A I2S 3W Class-D Amp
-- Elechouse NFC V4 chip (NOTE: The RFID Wiz kit includes the V3 chip. This one has a better range and support for other bands.)
+- [Adafruit Feather ESP32-S3 (4MB Flash / 2MB PSRAM) (PID 5477)](https://learn.adafruit.com/adafruit-esp32-s3-feather/overview) as the main board instead of the RP2040
+- Elechouse NFC V4 chip instead of the RFID Wiz kit (NOTE: The RFID Wiz kit includes the V3 chip. This one has a better range and support for other bands.)
 - [NeoPixel edge-lit strip](https://www.adafruit.com/product/4911) (trimmed to fit: **16 LEDs** in the diffuser ring) since the original strip called for is always out of stock
-- 470Ω resistor (data line) for improved LED performance
-- 470–1000µF electrolytic capacitor (across NeoPixel power input) for improved LED performance
+- Added 470Ω resistor (data line) for improved LED performance
+- Added 470–1000µF electrolytic capacitor (across NeoPixel power input) for improved LED performance
 
 ## Firmware Setup (ESP32-S3 + CircuitPython)
 
