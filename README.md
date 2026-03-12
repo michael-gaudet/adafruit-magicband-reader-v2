@@ -1,20 +1,21 @@
 # Magic Band Reader V2 (ESP32-S3 + Home Assistant Webhook)
-This is a “V2” modernization of Adafruit’s Magic Band Reader project, adapted to:
-- Use an Adafruit Feather **ESP32-S3** (with on-board Wi-Fi)
-- Use [Home Assistant](https://www.home-assistant.io/) webhook integration (device triggers HA, behavior lives in HA)
+This is an iteration on Adafruit’s Magic Band Reader project, adapted to:
+- Use an Adafruit Feather **ESP32-S3** (with on-board Wi-Fi), so we can integrate it as an IoT device
+- Use the Elechouse V4 NFC chip, so we know the actual ID of the scanned tag
+- Call a [Home Assistant](https://www.home-assistant.io/) webhook, so scanned tags can do different things -- like play music, turn on lights in your house, etc.
 
 # Original Adafruit Project
 The original adafruit project can be found here:
 https://learn.adafruit.com/magic-band-reader/
-That guide calls for a Feather RP2040, which has no real connectivity functionality. Those instructions work great as-is, except it was difficult to find the specific NeoPixel strip those instructions called for.
+Those instructions work great as-is, except it was difficult to find the specific NeoPixel strip those instructions called for. That guide calls for a Feather RP2040, which has no external connectivity functionality. It also uses the RFID Wiz kit, which is great for controlling doors or latches or whatever, but won't let you know _which_ tag was scanned. It only knows if a tag scanned was previously learned or not.
 
-But wouldn't it be great to actually have your scan interaction actually... *do* something?
+Wouldn't it be great to actually have your scan interaction actually... *do* something?
 
 ## Hardware
 The hardware used here uses the same amp, speaker, etc. called for by the original project, with some changes/additions.
 - [Adafruit Feather ESP32-S3 (4MB Flash / 2MB PSRAM) (PID 5477)](https://learn.adafruit.com/adafruit-esp32-s3-feather/overview)
 - MAX98357A I2S 3W Class-D Amp
-- RFID “Wiz” module (used for its `SIG` output)
+- Elechouse NFC V4 chip (NOTE: The RFID Wiz kit includes the V3 chip. This one has a better range and support for other bands.)
 - [NeoPixel edge-lit strip](https://www.adafruit.com/product/4911) (trimmed to fit: **16 LEDs** in the diffuser ring) since the original strip called for is always out of stock
 - 470Ω resistor (data line) for improved LED performance
 - 470–1000µF electrolytic capacitor (across NeoPixel power input) for improved LED performance
@@ -51,10 +52,12 @@ Make sure you properly eject the drive in Windows before disconnecting it to avo
 - **DIN**: Feather **D11**
 - Speaker to amp output terminals
 
-### RFID Wiz (SIG output only)
-- **SIG**: Feather **A1** (configured as input w/ pull-down)
+### Elechouse NFC V4
+I used some of the ribbon cable called for in the original project to make a 24cm / 9" lead of 4 wires. Tip: It's a lot easier to pull these wires through the neck of the scanner if you slide the ends of the ribbon cable into some shrinkwrap tube first!
+- **VCC**: Feather **3.3V**
 - **GND**: Feather **GND**
-- Note: the Wiz typically requires its own power arrangement (often 12V) depending on module behavior/revision.
+- **SDA**: Feather **SDA**
+- **SCL**: Feather **SCL**
 
 ## Home Assistant Integration
 
@@ -64,19 +67,19 @@ This project triggers Home Assistant using a webhook URL of the form:
 On the device, HA connection settings live in `settings.toml`.
 
 ### settings.toml (example)
-Create `CIRCUITPY/settings.toml` (do not commit it):
+Create `CIRCUITPY/settings.toml`:
 
 ```toml
 CIRCUITPY_WIFI_SSID="YourSSID"
 CIRCUITPY_WIFI_PASSWORD="YourPassword"
-
-HA_BASE_URL="http://192.168.1.123:8123"
+HA_BASE_URL="http://192.168.x.x:8123"
 HA_WEBHOOK_ID="YOUR_WEBHOOK_ID"
 HA_METHOD="POST"
+DEVICE_NAME="your_device_name_here"
 ```
 
 # Behavior
-* Idle: LEDs off, with a subtle heartbeat glow every ~10s
+* Idle: LEDs off, with a heartbeat blink every ~10s
 * Scan: warm-white chase while the HA call runs
 * Success: pulse green for 3 seconds + play a success WAV
 * Failure: pulse red for 3 seconds (no audio)
@@ -84,11 +87,12 @@ HA_METHOD="POST"
 # Libraries
 
 Install the Adafruit CircuitPython Bundle for your CircuitPython major version and copy required libraries into lib/:
-* neopixel
-* adafruit_led_animation
-* adafruit_requests
-* adafruit_connection_manager
-* dependencies pulled in by the above
+* adafruit_led_animation (directory)
+* adafruit_pn532 (directory)
+* adafruit_connection_manager.mpy
+* adafruit_pixelbuf.mpy
+* adafruit_requests.mpy
+* neopixel.mpy
 
 # Credits
 
