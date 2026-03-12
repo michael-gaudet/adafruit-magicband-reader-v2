@@ -94,5 +94,8 @@ Install the Adafruit CircuitPython Bundle for your CircuitPython major version a
 * neopixel.mpy
 
 # Credits
-
 Based on Adafruit’s “Magic Band Reader” guide, adapted for ESP32-S3 + Home Assistant webhook control.
+
+# Known Issues
+Maybe when I have time I'll come back to fix these:
+- [ ] I'm not satisfied with the smoothness of the "pulse" LED animation. Needs to be tweaked. It's still too sudden/harsh. I want it to be a more subtle ramped glow.
