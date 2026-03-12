@@ -37,7 +37,7 @@ Make sure you properly eject the drive in Windows before disconnecting it to avo
 ## Pinout / Wiring
 
 ### NeoPixels (edge-lit strip)
-- **DATA**: Feather **D6** → **470Ω** resistor → NeoPixel **DIN**
+- **DATA**: Feather **D6** → **470Ω** resistor → NeoPixel **DIN**. I soldered it inline and used some shrinkwrap tube to secure it.
 - **5V**: Feather **USB** pin → NeoPixel **+5V**
 - **GND**: Feather **GND** → NeoPixel **GND**
 - **Capacitor**: 470–1000µF across NeoPixel +5V/GND near the strip input
