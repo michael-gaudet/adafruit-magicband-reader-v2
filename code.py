@@ -19,7 +19,7 @@ import json
 import random
 import time
 import math
-
+import microcontroller
 import board
 import busio
 import wifi
@@ -54,9 +54,9 @@ CHASE_SIZE = 4
 CHASE_SPEED = 0.03
 
 # Idle heartbeat: very subtle glow for a brief moment every 10s
-IDLE_HEARTBEAT_INTERVAL_S = 10.0
-IDLE_HEARTBEAT_DURATION_S = 0.25
-IDLE_HEARTBEAT_COLOR = (8, 6, 3)  # very dim warm glow (0–255)
+IDLE_HEARTBEAT_INTERVAL_S = 15.0
+IDLE_HEARTBEAT_DURATION_S = 0.8
+IDLE_HEARTBEAT_COLOR = (9, 6, 3)  # very dim warm glow (0–255)
 
 # Pulse timing
 PULSE_STEPS = 60  # higher = smoother
@@ -110,6 +110,9 @@ pixels = neopixel.NeoPixel(
     brightness=PIXEL_BRIGHTNESS,
     auto_write=False
 )
+# Initialize to off, otherwise we see a couple pixels light up weirdly
+pixels.fill((0, 0, 0))
+pixels.show()
 
 boot_chase = Chase(
     pixels,
@@ -135,18 +138,21 @@ def idle_heartbeat_if_due():
     global last_heartbeat
     now = time.monotonic()
     if now - last_heartbeat >= IDLE_HEARTBEAT_INTERVAL_S:
-        pixels.fill(IDLE_HEARTBEAT_COLOR)
-        pixels.show()
-        time.sleep(IDLE_HEARTBEAT_DURATION_S)
+        pulse_sine(IDLE_HEARTBEAT_COLOR, seconds=IDLE_HEARTBEAT_DURATION_S)
         pixels.fill((0, 0, 0))
         pixels.show()
-        last_heartbeat = now
+        last_heartbeat = time.monotonic()
 
 def pre_call_chase(seconds=PRE_CALL_CHASE_SECONDS):
     t_end = time.monotonic() + seconds
     while time.monotonic() < t_end:
         chase.animate()
         time.sleep(0.01)
+
+def ensure_wifi():
+    if not wifi.radio.connected:
+        print("Wi-Fi dropped, reconnecting...")
+        init_wifi_with_retries()
 
 
 # -----------------------------
@@ -211,7 +217,7 @@ def _parse_http_base(url: str):
     return host, port
 
 
-def init_wifi_with_retries(max_tries=30, delay_s=0.25):
+def init_wifi_with_retries(max_tries=5, delay_s=0.25):
     ssid = os.getenv("CIRCUITPY_WIFI_SSID")
     pw = os.getenv("CIRCUITPY_WIFI_PASSWORD")
     if not ssid or not pw:
@@ -252,16 +258,10 @@ def init_pn532_with_retries(max_tries=20, delay_s=0.25, first_delay_s=0.6):
     # Create I2C ONCE
     i2c_local = busio.I2C(board.SCL, board.SDA)
 
-    # Optional: wait for the bus to become ready
+    # Wait for the bus to become ready
     t_end = time.monotonic() + 1.5
     while time.monotonic() < t_end:
         boot_chase.animate()
-        try:
-            if i2c_local.try_lock():
-                i2c_local.unlock()
-                break
-        except Exception:
-            pass
         time.sleep(0.01)
 
     # Give PN532 some time after power-up
@@ -307,7 +307,7 @@ def ha_webhook_call_nonblocking(uid_str: str) -> bool:
     payload = {
         "event": "rfid_scan",
         "ts": time.time(),
-        "device": "magicband_v3",
+        "device_name": DEVICE_NAME,
         "uid": uid_str,
     }
     body = json.dumps(payload).encode("utf-8")
@@ -406,13 +406,25 @@ def ha_webhook_call_nonblocking(uid_str: str) -> bool:
 # -----------------------------
 print("Booting...")
 
-# 1) Init PN532 (retry on cold boot)
-pn532 = init_pn532_with_retries()
+try:
+    # 1) Init PN532 (retry on cold boot)
+    pn532 = init_pn532_with_retries()
 
-# 2) Connect Wi-Fi (retry)
-init_wifi_with_retries()
+    # 2) Connect Wi-Fi (retry)
+    init_wifi_with_retries()
 
-print("Boot complete. Ready to scan.")
+    print("Boot complete. Ready to scan.")
+    pulse_sine(SUCCESS_COLOR, seconds=2)
+    pixels.fill((0, 0, 0))
+    pixels.show()
+
+except RuntimeError as e:
+    print("Boot failed:", e)
+    pulse_sine(FAIL_COLOR, seconds=3)
+    pixels.fill((0, 0, 0))
+    pixels.show()
+    time.sleep(10)
+    microcontroller.reset()
 
 
 # -----------------------------
@@ -451,6 +463,16 @@ while True:
 
     # Fake loading ring to simulate checking!
     pre_call_chase()
+    
+    # Make sure there is a valid Wi-Fi connection before attempting the webhook call, and if not, try to reconnect.
+    try:
+        ensure_wifi()
+    except RuntimeError as e:
+        print("Wi-Fi reconnect failed:", e)
+        pulse_sine(FAIL_COLOR, seconds=3)
+        last_uid_sent = uid_str
+        last_uid_sent_at = time.monotonic()
+        continue
 
     ok = ha_webhook_call_nonblocking(uid_str)
 
