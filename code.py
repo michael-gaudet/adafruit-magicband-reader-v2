@@ -35,12 +35,11 @@ from adafruit_led_animation.animation.chase import Chase
 from adafruit_led_animation.animation.solid import Solid
 from adafruit_led_animation.color import BLACK
 
-
 # -----------------------------
 # Config
 # -----------------------------
 PIXEL_PIN = board.D6
-PIXEL_COUNT = 16 # How many LED pixels in your strip, depends on what kind of NeoPixel strip you got and how tightly it's in there
+PIXEL_COUNT = 36 # How many LED pixels in your strip, depends on what kind of NeoPixel strip you got and how tightly it's in there
 PIXEL_BRIGHTNESS = 0.5  # global cap
 
 # Boot animation (yellow chase)
@@ -66,14 +65,6 @@ FAIL_COLOR = (120, 0, 0)     # medium red
 PRE_CALL_CHASE_SECONDS = 2.0
 
 WAV_DIR = "sounds"
-SUCCESS_SOUNDS = [
-    "chime",
-    "excellent",
-    "hello",
-    "operational",
-    "startours",
-]
-# (Intentionally no failure sounds)
 
 # HA Webhook (from settings.toml)
 HA_BASE_URL = os.getenv("HA_BASE_URL")
@@ -189,14 +180,33 @@ def pulse_sine(color, seconds, steps=PULSE_STEPS):
 
 
 def pulse_green_and_play_success_sound():
-    sound = random.choice(SUCCESS_SOUNDS)
-    path = f"{WAV_DIR}/{sound}.wav"
+    try:
+        files = [f for f in os.listdir(WAV_DIR) if f.endswith(".wav") or f.endswith(".mp3")]
+    except OSError:
+        files = []
+
+    if not files:
+        print("No sound files found in", WAV_DIR)
+        pulse_sine(SUCCESS_COLOR, seconds=3)
+        return
+
+    filename = random.choice(files)
+    path = f"{WAV_DIR}/{filename}"
     print("SUCCESS: playing:", path)
 
-    with open(path, "rb") as f:
-        wave = WaveFile(f)
-        audio.play(wave)
-        # Visual duration is fixed; not tied to audio length
+    try:
+        with open(path, "rb") as f:
+            if filename.endswith(".mp3"):
+                from audiomp3 import MP3Decoder
+                decoder = MP3Decoder(f)
+                audio.play(decoder)
+            else:
+                audio.play(WaveFile(f))
+            pulse_sine(SUCCESS_COLOR, seconds=3)
+            while audio.playing:
+                pass
+    except Exception as e:
+        print("Audio error:", e)
         pulse_sine(SUCCESS_COLOR, seconds=3)
 
 
