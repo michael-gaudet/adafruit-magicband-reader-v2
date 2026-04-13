@@ -9,6 +9,8 @@ The original adafruit project can be found here:
 https://learn.adafruit.com/magic-band-reader/
 Those instructions work great as-is, except it was difficult to find the specific NeoPixel strip those instructions called for. That guide calls for a Feather RP2040, which has no external connectivity functionality. It also uses the RFID Wiz kit, which is great for controlling doors or latches or whatever, but won't let you know _which_ tag was scanned. It only knows if a tag scanned was previously learned or not.
 
+Additionally, the original project used .WAV files, which have a pretty poor sample rate or else have a large file size. The Feather doesn't have a lot of storage space, so MP3 files are much better and supported by the audio chipset. The code in this project specifies a sounds directory so the individual sounds don't have to be hardcoded, which makes it a lot easier to add and remove sounds to customize it to your liking without rebooting the code.
+
 Wouldn't it be great to actually have your scan interaction actually... *do* something?
 
 ## Hardware
